@@ -25,9 +25,9 @@ from setuptools.dist import Distribution
 
 __version__ = '0.0.1'
 REQUIRED_PACKAGES = [
-    'tensorflow >= 2.1.0',
+    'tensorflow >= 2.4.0',
 ]
-project_name = 'tensorflow-custom-ops'
+project_name = 'tensorflow-felzenszwalb-edt'
 
 
 from setuptools.command.install import install
@@ -49,7 +49,7 @@ class BinaryDistribution(Distribution):
 setup(
     name=project_name,
     version=__version__,
-    description=('tensorflow-custom-ops is an examples for custom ops for TensorFlow'),
+    description=('tensorflow-felzenszwalb-edt is an examples for custom ops for TensorFlow'),
     author='Google Inc.',
     author_email='opensource@google.com',
     # Contained modules and scripts.

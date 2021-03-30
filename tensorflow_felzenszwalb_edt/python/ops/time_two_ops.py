@@ -12,31 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-"""Tests for time_two ops."""
+"""Use time_two ops in python."""
+
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import numpy as np
+from tensorflow.python.framework import load_library
+from tensorflow.python.platform import resource_loader
 
-from tensorflow.python.framework import ops
-from tensorflow.python.platform import test
-from tensorflow.python.framework import test_util
-try:
-  from tensorflow_time_two.python.ops import time_two_ops
-except ImportError:
-  import time_two_ops
-
-
-class TimeTwoTest(test.TestCase):
-
-  @test_util.run_gpu_only
-  def testTimeTwo(self):
-    with self.test_session():
-      with ops.device("/gpu:0"):
-        self.assertAllClose(
-            time_two_ops.time_two([[1, 2], [3, 4]]), np.array([[2, 4], [6, 8]]))
-
-
-if __name__ == '__main__':
-  test.main()
+time_two_ops = load_library.load_op_library(
+    resource_loader.get_path_to_datafile('_time_two_ops.so'))
+basin_finder = time_two_ops.basin_finder

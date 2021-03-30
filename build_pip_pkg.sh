@@ -16,20 +16,7 @@
 set -e
 set -x
 
-PLATFORM="$(uname -s | tr 'A-Z' 'a-z')"
-function is_windows() {
-  if [[ "${PLATFORM}" =~ (cygwin|mingw32|mingw64|msys)_nt* ]]; then
-    true
-  else
-    false
-  fi
-}
-
-if is_windows; then
-  PIP_FILE_PREFIX="bazel-bin/build_pip_pkg.exe.runfiles/__main__/"
-else
-  PIP_FILE_PREFIX="bazel-bin/build_pip_pkg.runfiles/__main__/"
-fi
+PIP_FILE_PREFIX="bazel-bin/build_pip_pkg.runfiles/__main__/"
 
 function main() {
   while [[ ! -z "${1}" ]]; do
@@ -67,8 +54,7 @@ function main() {
   cp ${PIP_FILE_PREFIX}setup.py "${TMPDIR}"
   cp ${PIP_FILE_PREFIX}MANIFEST.in "${TMPDIR}"
   cp ${PIP_FILE_PREFIX}LICENSE "${TMPDIR}"
-  rsync -avm -L --exclude='*_test.py' ${PIP_FILE_PREFIX}tensorflow_zero_out "${TMPDIR}"
-  rsync -avm -L --exclude='*_test.py' ${PIP_FILE_PREFIX}tensorflow_time_two "${TMPDIR}"
+  rsync -avm -L --exclude='*_test.py' ${PIP_FILE_PREFIX}tensorflow_felzenszwalb_edt "${TMPDIR}"
 
   pushd ${TMPDIR}
   echo $(date) : "=== Building wheel"
@@ -82,3 +68,5 @@ function main() {
 }
 
 main "$@"
+
+mv artifacts/tensorflow_felzenszwalb_edt-0.0.1-cp36-cp36m-linux_x86_64.whl artifacts/tensorflow_felzenszwalb_edt-0.0.1-py37-none-linux_x86_64.whl
