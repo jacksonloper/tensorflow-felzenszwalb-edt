@@ -19,7 +19,9 @@ Output is a float32 tensor g of the same shape as f, satisfying
 
 # Installation instructions
 
-pip install the wheel found in the artifacts directory
+```
+pip install --upgrade https://github.com/jacksonloper/tensorflow-felzenszwalb-edt/raw/master/artifacts/tensorflow_felzenszwalb_edt-0.0.1-py37-none-linux_x86_64.whl
+```
 
 # Build instructions
 
