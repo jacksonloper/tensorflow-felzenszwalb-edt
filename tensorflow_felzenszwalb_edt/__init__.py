@@ -17,3 +17,15 @@
 from __future__ import absolute_import
 
 from tensorflow_felzenszwalb_edt.python.ops.time_two_ops import basin_finder
+import tensorflow as tf
+
+def edt1d(f,axis):
+    shp=tf.shape(f)
+    start_batch=tf.reduce_prod(tf.shape(f)[:axis])
+    nn = shp[axis]
+    end_batch = tf.reduce_prod(shp[axis+1:])
+    f_reshaped = tf.reshape(f,(start_batch,nn,end_batch))
+
+    out,z,v,basins = basin_finder(f_reshaped)
+
+    return tf.reshape(out,f.shape)

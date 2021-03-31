@@ -49,47 +49,52 @@ __global__ void BasinFinderCudaKernel(const int dim0, const int dim1,
         // f is a 3-tensor of shape (dim0,dim1,dim2)
         // this thread looks at f[batchdim//shape[2],:,batchdim%shape[2]]
 
-        const int offset1= i0*dim1*dim2+i2;
-        const int offset2= i0*(dim1+1)*dim2+i2;
+        if((i0<dim0)&&(i2<dim2)) {
 
-        // initialize v,z
-        for(int i1=0; i1<dim1; i1++) {
-          v[offset1+i1*dim2]=0;
-          z[offset2+i1*dim2]=0;
-        }
-        z[offset2+dim1*dim2]=0;
+          const int offset1= i0*dim1*dim2+i2;
+          const int offset2= i0*(dim1+1)*dim2+i2;
 
-        // compute lower parabolas
-        int k=0;
-        z[offset2+0]=-verybig;
-        z[offset2+dim2]=verybig;
 
-        for(int q=1; q<dim1; q++) {
-              //printf("%d %d %d :: %d %d \n",i0,i2,q,offset1+k*dim2,offset1+v[offset1+k*dim2]*dim2);
-              float s=calcint<T,S>(q,v[offset1+k*dim2],f[offset1+q*dim2],f[offset1+v[offset1+k*dim2]*dim2]);
-              //printf("%d %d %d :: %d %d %f \n",i0,i2,q,offset1+k*dim2,offset1+v[offset1+k*dim2]*dim2,s);
 
-              while(s<=z[offset2+k*dim2]){
-                  k=k-1;
-                  //printf("%d %d %d :: %d %d \n",i0,i2,q,offset1+k*dim2,offset1+v[offset1+k*dim2]*dim2);
-                  s=calcint<T,S>(q,v[offset1+k*dim2],f[offset1+q*dim2],f[offset1+v[offset1+k*dim2]*dim2]);
-                  //printf("%d %d %d :: %d %d %f \n",i0,i2,q,offset1+k*dim2,offset1+v[offset1+k*dim2]*dim2,s);
-              }
-              k=k+1;
-              v[offset1+k*dim2]=q;
-              z[offset2+k*dim2]=s;
-              z[offset2+k*dim2+dim2]=verybig;
-        }
-
-        // compute basins and out
-        k=0;
-        for(int q=0; q<dim1; q++) {
-          while(z[offset2+(k+1)*dim2]<q) {
-            k=k+1;
+          // initialize v,z
+          for(int i1=0; i1<dim1; i1++) {
+            v[offset1+i1*dim2]=0;
+            z[offset2+i1*dim2]=0;
           }
-          int thisv=v[offset1+k*dim2];
-          basins[offset1+q*dim2]=thisv;
-          out[offset1+q*dim2] = (q-thisv)*(q-thisv) + f[offset1+thisv*dim2];
+          z[offset2+dim1*dim2]=0;
+
+          // compute lower parabolas
+          int k=0;
+          z[offset2+0]=-verybig;
+          z[offset2+dim2]=verybig;
+
+          for(int q=1; q<dim1; q++) {
+                //printf("%d %d %d :: %d %d \n",i0,i2,q,offset1+k*dim2,offset1+v[offset1+k*dim2]*dim2);
+                float s=calcint<T,S>(q,v[offset1+k*dim2],f[offset1+q*dim2],f[offset1+v[offset1+k*dim2]*dim2]);
+                //printf("%d %d %d :: %d %d %f \n",i0,i2,q,offset1+k*dim2,offset1+v[offset1+k*dim2]*dim2,s);
+
+                while(s<=z[offset2+k*dim2]){
+                    k=k-1;
+                    //printf("%d %d %d :: %d %d \n",i0,i2,q,offset1+k*dim2,offset1+v[offset1+k*dim2]*dim2);
+                    s=calcint<T,S>(q,v[offset1+k*dim2],f[offset1+q*dim2],f[offset1+v[offset1+k*dim2]*dim2]);
+                    //printf("%d %d %d :: %d %d %f \n",i0,i2,q,offset1+k*dim2,offset1+v[offset1+k*dim2]*dim2,s);
+                }
+                k=k+1;
+                v[offset1+k*dim2]=q;
+                z[offset2+k*dim2]=s;
+                z[offset2+k*dim2+dim2]=verybig;
+          }
+
+          // compute basins and out
+          k=0;
+          for(int q=0; q<dim1; q++) {
+            while(z[offset2+(k+1)*dim2]<q) {
+              k=k+1;
+            }
+            int thisv=v[offset1+k*dim2];
+            basins[offset1+q*dim2]=thisv;
+            out[offset1+q*dim2] = (q-thisv)*(q-thisv) + f[offset1+thisv*dim2];
+          }
         }
 }
 
