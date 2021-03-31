@@ -39,7 +39,7 @@ g[i0,i1,i2] = min_{j0,j1,j2} ((i0-j0)**2 + (i1-j1)**2 + (i2-j2)**2 + f[j0,j1,j2]
 
 ## example usage: morphological edt
 
-One special case of edt is the so-called mnmorphological edt.  Given
+One special case of edt is the so-called morphological edt.  Given
 a binary vector `b`, the task is to compute objects such as 
 
 ```
