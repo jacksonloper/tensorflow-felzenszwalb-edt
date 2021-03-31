@@ -17,9 +17,23 @@
 from __future__ import absolute_import
 
 from tensorflow_felzenszwalb_edt.python.ops.time_two_ops import basin_finder
+from tensorflow_felzenszwalb_edt.python.ops.time_two_ops import segment_sum_middle_axis
 import tensorflow as tf
 
+@tf.custom_gradient
 def edt1d(f,axis):
+    '''
+    Input:
+    - f, a float32/float64 tensor of shape M0 x M1 x M2 ... Mn
+    - axis, an integer in {0,1,2,...n}
+
+    Output is a float32/float64 tensor g of the same shape as f, satisfying
+
+    g[i_0,i_1,...i_{axis-1},p,i_{axis+1}...i_n]
+        =
+    min_q ((q-p)**2 + f[i_0,i_1,...i_{axis-1},q,i_{axis+1}...i_n])
+    '''
+
     shp=tf.shape(f)
     start_batch=tf.reduce_prod(tf.shape(f)[:axis])
     nn = shp[axis]
@@ -28,4 +42,23 @@ def edt1d(f,axis):
 
     out,z,v,basins = basin_finder(f_reshaped)
 
-    return tf.reshape(out,f.shape)
+    # basins[i0,p,i2] gives the argmin of the edt problem, i.e.
+    # basins[i0,p,i2] = argmin_q (q-p)**2 + f[i0,q,i2])
+    # out[i0,p,i2] = (basins[i0,p,i2]-p)**2 + f[i0,basins[i0,p,i2],i2])
+
+
+    def grad(weights):
+        '''
+        We need tf.math.segment_sum, but batched over indices i0 and i2.
+        This only is possible without ragged arrays becaused we
+        guarantee that the max value of basins is less than weights.shape[1]
+        for each batch.
+        '''
+
+        weights_reshaped = tf.reshape(weights,(start_batch,nn,end_batch))
+        jv=segment_sum_middle_axis(weights_reshaped,basins)
+
+        return tf.reshape(jv,weights.shape)
+
+
+    return tf.reshape(out,f.shape),grad

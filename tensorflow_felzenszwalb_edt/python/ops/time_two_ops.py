@@ -24,3 +24,4 @@ from tensorflow.python.platform import resource_loader
 time_two_ops = load_library.load_op_library(
     resource_loader.get_path_to_datafile('_time_two_ops.so'))
 basin_finder = time_two_ops.basin_finder
+segment_sum_middle_axis = time_two_ops.segment_sum_middle_axis

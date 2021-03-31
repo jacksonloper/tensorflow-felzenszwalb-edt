@@ -98,6 +98,34 @@ __global__ void BasinFinderCudaKernel(const int dim0, const int dim1,
         }
 }
 
+
+template <typename T, typename S>
+__global__ void SegmentSumMiddleAxisCudaKernel(const int dim0, const int dim1,
+    const int dim2, const T* weights, const S* basins, T* out) {
+
+        const int batchdim = threadIdx.x + blockDim.x*blockIdx.x;
+        const int i0 = batchdim/dim2;
+        const int i2 = batchdim%dim2;
+        // f is a 3-tensor of shape (dim0,dim1,dim2)
+        // this thread looks at f[batchdim//shape[2],:,batchdim%shape[2]]
+
+        if((i0<dim0)&&(i2<dim2)) {
+
+          const int offset1= i0*dim1*dim2+i2;
+          const int offset2= i0*(dim1+1)*dim2+i2;
+
+          for(int i1=0; i1<dim1; i1++) {
+            out[offset1+i1*dim2]=0;
+          }
+
+          // add up the weights
+          for(int p=0; p<dim1; p++) {
+            int myq = basins[offset1+p*dim2];
+            out[offset1+myq*dim2]+=weights[offset1+p*dim2];
+          }
+        }
+}
+
 // Define the GPU implementation that launches the CUDA kernel.
 template <typename T,typename S>
 struct BasinFinderFunctor<GPUDevice, T,S> {
@@ -113,8 +141,28 @@ struct BasinFinderFunctor<GPUDevice, T,S> {
   }
 };
 
+
+// Define the GPU implementation that launches the CUDA kernel.
+template <typename T,typename S>
+struct SegmentSumMiddleAxisFunctor<GPUDevice, T,S> {
+  void operator()(const GPUDevice& d, int dim0, int dim1, int dim2, const T* in, const S* basins, T* out) {
+    // Launch the cuda kernel.
+    //
+    // See core/util/cuda_kernel_helper.h for example of computing
+    // block count and thread_per_block count.
+    int block_count = 1+static_cast<int>(dim0*dim2/8);
+    int thread_per_block = 8;
+
+    SegmentSumMiddleAxisCudaKernel<T,S>
+        <<<block_count, thread_per_block, 0, d.stream()>>>(dim0, dim1,dim2, in, basins,out);
+  }
+};
+
 // Explicitly instantiate functors for the types of OpKernels registered.
 template struct BasinFinderFunctor<GPUDevice, float,int32>;
+template struct BasinFinderFunctor<GPUDevice, double,int32>;
+template struct SegmentSumMiddleAxisFunctor<GPUDevice, float,int32>;
+template struct SegmentSumMiddleAxisFunctor<GPUDevice, double,int32>;
 }  // end namespace functor
 }  // end namespace tensorflow
 

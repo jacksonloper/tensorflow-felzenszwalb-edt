@@ -11,6 +11,11 @@ struct BasinFinderFunctor {
   void operator()(const Device& d, int dim0, int dim1, int dim2, const T* f, T* out, T* z, S* v, S* basins);
 };
 
+template <typename Device, typename T, typename S>
+struct SegmentSumMiddleAxisFunctor {
+  void operator()(const Device& d, int dim0, int dim1, int dim2, const T* weights, const S* basins, T* out);
+};
+
 }  // namespace functor
 
 }  // namespace tensorflow

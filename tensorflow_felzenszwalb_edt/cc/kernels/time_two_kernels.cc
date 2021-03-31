@@ -88,6 +88,36 @@ struct BasinFinderFunctor<CPUDevice, T,S> {
   }
 };
 
+#undef calcint
+
+// CPU specialization of actual computation.
+template <typename T,typename S>
+struct SegmentSumMiddleAxisFunctor<CPUDevice, T,S> {
+  void operator()(const CPUDevice& d, int dim0, int dim1, int dim2, const T* weights, const S* basins, T* out) {
+    for (int i0 = 0; i0< dim0; i0++) {
+          for(int i2 =0; i2<dim2; i2++) {
+            const int offset1= i0*dim1*dim2+i2;
+
+            // want:
+            // out[i0,q,i2] = sum_p (basins[i0,p,i1]==q) * weights[i0,p,i2]
+            // equivalently,
+            // out[i0,basins[i0,p,i1],i2] += weights[i0,p,i2] for each p
+
+            // initialize out
+            for(int i1=0; i1<dim1; i1++) {
+              out[offset1+i1*dim2]=0;
+            }
+
+            // add up the weights
+            for(int p=0; p<dim1; p++) {
+              int myq = basins[offset1+p*dim2];
+              out[offset1+myq*dim2]+=weights[offset1+p*dim2];
+            }
+        }
+      }
+  }
+};
+
 // OpKernel definition.
 // template parameter <T> is the datatype of the tensors.
 template <typename Device, typename T, typename S>
@@ -142,12 +172,59 @@ class BasinFinderOp : public OpKernel {
   }
 };
 
+// OpKernel definition.
+// template parameter <T> is the datatype of the tensors.
+template <typename Device, typename T, typename S>
+class SegmentSumMiddleAxisOp : public OpKernel {
+ public:
+  explicit SegmentSumMiddleAxisOp(OpKernelConstruction* context) : OpKernel(context) {}
+
+  void Compute(OpKernelContext* context) override {
+    // Grab the input tensor
+    const Tensor& input_tensor = context->input(0);
+    const Tensor& basin_tensor = context->input(1);
+
+    OP_REQUIRES(context, input_tensor.dims() == 3,errors::InvalidArgument("input should be a 3-tensor"));
+
+    // Create an output tensors
+    Tensor* output_tensor = NULL;
+    OP_REQUIRES_OK(context, context->allocate_output(0, input_tensor.shape(),
+                                                     &output_tensor));
+
+    // Do the computation.
+    const int dim0=static_cast<int>(input_tensor.dim_size(0));
+    const int dim1=static_cast<int>(input_tensor.dim_size(1));
+    const int dim2=static_cast<int>(input_tensor.dim_size(2));
+
+
+    SegmentSumMiddleAxisFunctor<Device, T,S>()(
+        context->eigen_device<Device>(),
+        dim0,dim1,dim2,
+        input_tensor.flat<T>().data(),
+        basin_tensor.flat<S>().data(),
+        output_tensor->flat<T>().data()
+      );
+
+  }
+};
+
 // Register the CPU kernels.
 #define REGISTER_CPU(T)                                          \
   REGISTER_KERNEL_BUILDER(                                       \
       Name("BasinFinder").Device(DEVICE_CPU).TypeConstraint<T>("T"), \
       BasinFinderOp<CPUDevice, T,int32>);
 REGISTER_CPU(float);
+REGISTER_CPU(double);
+#undef REGISTER_CPU
+
+// Register the CPU kernels.
+#define REGISTER_CPU(T)                                          \
+  REGISTER_KERNEL_BUILDER(                                       \
+      Name("SegmentSumMiddleAxis").Device(DEVICE_CPU).TypeConstraint<T>("T"), \
+      SegmentSumMiddleAxisOp<CPUDevice, T,int32>);
+REGISTER_CPU(float);
+REGISTER_CPU(double);
+#undef REGISTER_CPU
 
 // Register the GPU kernels.
 #ifdef GOOGLE_CUDA
@@ -157,6 +234,18 @@ REGISTER_CPU(float);
       Name("BasinFinder").Device(DEVICE_GPU).TypeConstraint<T>("T"), \
       BasinFinderOp<GPUDevice, T,S>);
 REGISTER_GPU(float,int32);
+REGISTER_GPU(double,int32);
+#undef REGISTER_GPU
+
+#define REGISTER_GPU(T,S)                                          \
+  extern template struct SegmentSumMiddleAxisFunctor<GPUDevice, T,S>;           \
+  REGISTER_KERNEL_BUILDER(                                       \
+      Name("SegmentSumMiddleAxis").Device(DEVICE_GPU).TypeConstraint<T>("T"), \
+      SegmentSumMiddleAxisOp<GPUDevice, T,S>);
+REGISTER_GPU(float,int32);
+REGISTER_GPU(double,int32);
+#undef REGISTER_GPU
+
 #endif  // GOOGLE_CUDA
 }
 }  // namespace tensorflow

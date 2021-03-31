@@ -19,7 +19,7 @@ limitations under the License.
 using namespace tensorflow;
 
 REGISTER_OP("BasinFinder")
-    .Attr("T: {float}")
+    .Attr("T: {float,float64}")
     .Input("in: T")
     .Output("out: T")      // actual edt
     .Output("z: T")        // different lower-bound parabola intersections
@@ -46,6 +46,22 @@ REGISTER_OP("BasinFinder")
       // v,basins same as the input
       c->set_output(2, c->input(0));
       c->set_output(3, c->input(0));
+
+      // done!
+      return Status::OK();
+    });
+
+REGISTER_OP("SegmentSumMiddleAxis")
+    .Attr("T: {float,float64}")
+    .Input("weights: T")
+    .Input("basins: int32")
+    .Output("out: T")
+    .SetShapeFn([](::tensorflow::shape_inference::InferenceContext* c) {
+      ::tensorflow::shape_inference::ShapeHandle input;
+      TF_RETURN_IF_ERROR(c->WithRank(c->input(0), 3, &input)); // insist input is rank 3
+
+      // output is same shape as input
+      c->set_output(0, c->input(0));
 
       // done!
       return Status::OK();
