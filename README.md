@@ -1,7 +1,7 @@
 # What this package is
 
-This package provides a single differentiable tensorflow function,
-tensorflow_felzenszwalb_edt.edt1d.
+This package provides a single differentiable tensorflow function
+for computing euclidean distance transforms: tensorflow_felzenszwalb_edt.edt1d.
 
 ```
 edt1d
@@ -15,6 +15,59 @@ Output is a float32 tensor g of the same shape as f, satisfying
     =
   min_q ((q-p)**2 + f[i_0,i_1,...i_{axis-1},q,i_{axis+1}...i_n])
 
+```
+
+## example usage: multiple dimensions
+
+Recall that the euclidean distance transform is separable, so if you want to compute
+a multidimensional distance transform, you can perform it iteratively.  For example
+if you do this:
+
+```
+import numpy.random as npr
+f=npr.randn(10,20,40)
+g=edt1d(f,axis=0)
+g=edt1d(g,axis=1)
+g=edt1d(g,axis=2)
+```
+
+then g will satisfy
+
+```
+g[i0,i1,i2] = min_{j0,j1,j2} ((i0-j0)**2 + (i1-j1)**2 + (i2-j2)**2 + f[j0,j1,j2])
+```
+
+## example usage: morphological edt
+
+One special case of edt is the so-called mnmorphological edt.  Given
+a binary vector `b`, the task is to compute objects such as 
+
+```
+g[i0,i1,i2] = min_{j0,j1,j2: b[j0,j1,j2]=True} ((i0-j0)**2 + (i1-j1)**2 + (i2-j2)**2)
+```
+
+This can be achieved by taking constructing a float32 array where the false values are 
+sufficiently large:
+
+```
+import numpy.random as npr
+b = npr.randn(10,20,40)>3
+f = (~b)*np.sum(np.array(b.shape)**2)
+d = edt1d(f,0)
+d = edt1d(d,1)
+d = edt1d(d,2)
+```
+
+## example usage: batch processing
+
+Say you have many 3d images of the same size and you would like to perform the edt over each of them.  Do this.
+
+```
+import numpy.random as npr
+b = npr.randn(1000,10,20,40) # 1000 images, each of size 10x20x40 
+d = edt1d(f,1)
+d = edt1d(d,2)
+d = edt1d(d,3)
 ```
 
 # Installation instructions
