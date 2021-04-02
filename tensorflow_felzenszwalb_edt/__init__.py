@@ -27,11 +27,20 @@ def edt1d(f,axis):
     - f, a float32/float64 tensor of shape M0 x M1 x M2 ... Mn
     - axis, an integer in {0,1,2,...n}
 
-    Output is a float32/float64 tensor g of the same shape as f, satisfying
+    Output is
+    - g -- a float32/float64 of the same shape as f
+    - b -- an int32 of the same shape as f,
+
+    satisfying
 
     g[i_0,i_1,...i_{axis-1},p,i_{axis+1}...i_n]
         =
     min_q ((q-p)**2 + f[i_0,i_1,...i_{axis-1},q,i_{axis+1}...i_n])
+
+    b[i_0,i_1,...i_{axis-1},p,i_{axis+1}...i_n]
+        =
+    argmin_q ((q-p)**2 + f[i_0,i_1,...i_{axis-1},q,i_{axis+1}...i_n])
+
     '''
 
     shp=tf.shape(f)
@@ -47,7 +56,7 @@ def edt1d(f,axis):
     # out[i0,p,i2] = (basins[i0,p,i2]-p)**2 + f[i0,basins[i0,p,i2],i2])
 
 
-    def grad(weights):
+    def grad(weights,weightsb):
         '''
         We need tf.math.segment_sum, but batched over indices i0 and i2.
         This only is possible without ragged arrays becaused we
@@ -55,10 +64,41 @@ def edt1d(f,axis):
         for each batch.
         '''
 
+        if weightsg is None:
+            return None
+
         weights_reshaped = tf.reshape(weights,(start_batch,nn,end_batch))
         jv=segment_sum_middle_axis(weights_reshaped,basins)
 
         return tf.reshape(jv,weights.shape)
 
 
-    return tf.reshape(out,f.shape),grad
+    return (tf.reshape(out,f.shape),(tf.reshape(basins,f.shape))),grad
+
+def gather_with_batching(params,indices,axis):
+    '''
+    output[p0,p1...p_{axis-1},i,p_{axis+1}...p_{N-1}]
+
+            =
+
+    params[p0,p1,...p_{axis-1},
+               indices[p0,p1,...p_{axis-1},i,p_{axis+1}...p_{N-1}],
+           p_{axis+1},....p_{N-1}
+          ]
+
+    For example, with N=3 and axis=1, we have
+
+    output[i0,i1,i2] = params[i0,indices[i0,i1,i2],i2]
+    '''
+
+    import numpy as np
+    n=len(params.shape)
+    perm=np.r_[0:n]
+    perm[axis],perm[n-1]=perm[n-1],perm[axis]
+
+    params=tf.transpose(params,perm)
+    indices=tf.transpose(indices,perm)
+
+    result=tf.gather(params,indices,axis=n-1,batch_dims=n-1)
+
+    return tf.transpose(result,perm)
