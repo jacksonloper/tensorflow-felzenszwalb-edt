@@ -15,8 +15,7 @@ TIME_TWO_GPU_ONLY_TARGET_LIB = tensorflow_felzenszwalb_edt/python/ops/_time_two_
 TIME_TWO_TARGET_LIB = tensorflow_felzenszwalb_edt/python/ops/_time_two_ops.so
 
 pip_pkg: $(TIME_TWO_TARGET_LIB)
-	./build_pip_pkg.sh make artifacts
-
+	bash ./build_pip_pkg.sh make artifacts
 
 # time_two op for GPU
 time_two_gpu_only: $(TIME_TWO_GPU_ONLY_TARGET_LIB)

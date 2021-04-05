@@ -64,7 +64,7 @@ def edt1d(f,axis):
         for each batch.
         '''
 
-        if weightsg is None:
+        if weights is None:
             return None
 
         weights_reshaped = tf.reshape(weights,(start_batch,nn,end_batch))
