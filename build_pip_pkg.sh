@@ -56,4 +56,4 @@ function main() {
 
 main "$@"
 
-mv artifacts/tensorflow_felzenszwalb_edt-0.0.1-cp36-cp36m-linux_x86_64.whl artifacts/tensorflow_felzenszwalb_edt-0.0.1-py37-none-linux_x86_64.whl
+mv artifacts/tensorflow_felzenszwalb_edt-0.0.2-cp36-cp36m-linux_x86_64.whl artifacts/tensorflow_felzenszwalb_edt-0.0.2-py37-none-linux_x86_64.whl
