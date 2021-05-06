@@ -70,7 +70,7 @@ def edt1d(f,axis):
         weights_reshaped = tf.reshape(weights,(start_batch,nn,end_batch))
         jv=segment_sum_middle_axis(weights_reshaped,basins)
 
-        return tf.reshape(jv,weights.shape)
+        return tf.reshape(jv,weights.shape),None
 
 
     return (tf.reshape(out,f.shape),(tf.reshape(basins,f.shape))),grad
