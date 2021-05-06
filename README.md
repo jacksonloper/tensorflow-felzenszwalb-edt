@@ -52,7 +52,7 @@ output[i0,i1,i2] = params[i0,indices[i0,i1,i2],i2]
 ```
 
 This function is a small wrapper around `tf.gather` that is useful for computing the argmin over the edt operator in the multidimensional case (see "getting the basin locations", below).
-```
+
 
 ## example usage: multiple dimensions
 
